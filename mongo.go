@@ -5,6 +5,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/troysellers/mongotest/imdb"
@@ -31,6 +32,7 @@ func main() {
 	}
 	client, err := getClient()
 	if err != nil {
+		log.Println("Could initialise mongo client")
 		log.Fatal(err)
 	}
 	defer func() {
@@ -61,6 +63,14 @@ func main() {
 
 func getClient() (*mongo.Client, error) {
 	uri := os.Getenv("MONGO_URL")
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
+	log.Printf("URL %s", uri)
+
+	serverAPIOptions := options.ServerAPI(options.ServerAPIVersion1)
+	clientOptions := options.Client().ApplyURI(uri).SetServerAPIOptions(serverAPIOptions)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	client, err := mongo.Connect(ctx, clientOptions)
 	return client, err
 }
